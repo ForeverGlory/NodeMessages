@@ -1,0 +1,8 @@
+name = Node Messages
+description = Node create/update custom messages
+package = Node Additional
+dependencies[] = node
+
+core = 7.x
+version = 7.x-1.0
+project = node_message

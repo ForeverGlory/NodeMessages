@@ -1,0 +1,60 @@
+<?php
+
+function node_messages_form_node_type_form_alter(&$form, &$form_state) {
+  $form['node_messages'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('node messages'),
+    '#group' => 'additional_settings',
+    'messages' => array(
+      'node_messages_insert' => array(
+        '#title' => t('node insert message'),
+        '#description' => t('default message:') . t('@type %title has been created.'),
+        '#type' => 'textfield',
+        '#default_value' => $form['#node_type']->type ? variable_get('node_messages_insert_' . $form['#node_type']->type, '') : '',
+      ),
+      'node_messages_update' => array(
+        '#title' => t('node update message'),
+        '#description' => t('default message:') . t('@type %title has been updated.'),
+        '#type' => 'textfield',
+        '#default_value' => $form['#node_type']->type ? variable_get('node_messages_update_' . $form['#node_type']->type, '') : '',
+      )
+    )
+  );
+}
+
+function node_messages_node_insert($node) {
+  _node_messages_build_message($node, 'insert');
+}
+
+function node_messages_node_update($node) {
+  _node_messages_build_message($node, 'update');
+}
+
+function _node_messages_build_message($node, $op) {
+  $message = variable_get('node_messages_' . $op . '_' . $node->type, '');
+  if (empty($message)) {
+    return FALSE;
+  }
+  if (!isset($_SESSION['node_messages'])) {
+    $_SESSION['node_messages'] = array();
+  }
+  $args = array('@type' => node_type_get_name($node), '%title' => $node->title);
+  if ($op == 'insert') {
+    $search = t('@type %title has been created.', $args);
+  } elseif ($op == 'update') {
+    $search = t('@type %title has been updated.', $args);
+  }
+  $_SESSION['node_messages'][$search] = t($message, $args);
+}
+
+function node_messages_preprocess_status_messages(&$variables) {
+  if (!empty($_SESSION['messages']['status']) && !empty($_SESSION['node_messages'])) {
+    foreach ($_SESSION['node_messages'] as $search => $replace) {
+      $key = array_search($search, $_SESSION['messages']['status']);
+      if ($key !== FALSE) {
+        $_SESSION['messages']['status'][$key] = $replace;
+      }
+    }
+    unset($_SESSION['node_messages']);
+  }
+}
